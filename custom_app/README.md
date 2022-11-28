@@ -1,46 +1,56 @@
+## Introduction
+
 This is basic configuration for building images and testing custom apps that use Frappe.
 
-You can see that there's four files in this folder:
+- Change the `frappe` and `erpnext` versions in `docker-bake.hcl` to use them as base. These values correspond to tags and branch names on the github frappe and erpnext repo. e.g. `version-14`, `v14.16.0`
+- Change `ci/clone-apps.sh` script to clone your private and public apps. Read comments in the file to update it as per need. Current script will install following apps in `repos` folder:
+  - https://github.com/frappe/hrms.git
+- Change `images/backend.Dockerfile` to copy and install required apps with `install-app`.
+- Change `images/frontend.Dockerfile` to copy and install required apps with `install-app`.
+- Change `docker-bake.hcl` for builds as per need.
 
+## Files Introduction
+
+You can see that there's four (4) files in this folder:
+
+- `ci/clone-apps.sh`
 - `backend.Dockerfile`,
 - `frontend.Dockerfile`,
 - `docker-bake.hcl`,
-- `compose.override.yaml`.
+
+`ci/clone-apps.sh` clones the repository of all the apps that we need in the `repos` folder
 
 Python code will be built in `backend.Dockerfile`. JS and CSS (and other fancy frontend stuff) files will be built in `frontend.Dockerfile`.
 
 `docker-bake.hcl` is reference file for [Buildx Bake](https://github.com/docker/buildx/blob/master/docs/reference/buildx_bake.md). It helps to build images without having to remember all build arguments.
 
-`compose.override.yaml` is [Compose](https://docs.docker.com/compose/compose-file/) override that replaces images from [main compose file](https://github.com/frappe/frappe_docker/blob/main/compose.yaml) so it would use your own images.
+## Manually Build images
+Execute the following commands from `custom_app` directory
 
-To get started, install Docker and [Buildx](https://github.com/docker/buildx#installing). Then copy all content of this folder (except this README) to your app's root directory. Also copy `compose.yaml` in the root of this repository.
+Clone the apps that we need other than ERPNext (e.g. hrms) in the `repos` folder,
 
-Before the next step—to build images—replace "custom_app" with your app's name in `docker-bake.hcl`. After that, let's try to build:
-
-```bash
-FRAPPE_VERSION=... ERPNEXT_VERSION=... docker buildx bake
+```shell
+sh ./ci/clone-apps.sh
 ```
 
-> 💡 We assume that majority of our users use ERPNext, that's why images in this tutorial are based on ERPNext images. If don't want ERPNext, change base image in Dockerfile and remove ERPNEXT_VERSION from bake file. To know more about steps used to build frontend image read comments in `frontend.Dockerfile`.
+Set appropriate values of variables in `docker-bake.hcl`,
 
-If something goes wrong feel free to leave an issue.
+- `FRAPPE_VERSION` set to use frappe version during building images. Default is `version-13`.
+- `ERPNEXT_VERSION` set to use erpnext version during building images. Default is `version-13`.
 
-To test if site works, setup `.env` file (check [example](<(https://github.com/frappe/frappe_docker/blob/main/example.env)>)) and run:
+Build custom images of `frappe/erpnext-worker` and `frappe/nginx-worker`,
 
-```bash
-docker-compose -f compose.yaml -f overrides/compose.noproxy.yaml -f overrides/compose.mariadb.yaml -f overrides/compose.redis.yaml -f custom_app/compose.override.yaml up -d
-docker-compose exec backend \
-  bench new-site 127.0.0.1 \
-    --mariadb-root-password 123 \
-    --admin-password admin \
-    --install-app <Name of your app>
-docker-compose restart backend
+```shell
+docker buildx bake -f docker-bake.hcl --load
 ```
 
-Cool! You just containerized your app!
+Note:
+
+- Use `docker buildx bake --load` to load images for usage with docker.
+- Use `docker buildx bake --push` to push images to registry.
+- Use `docker buildx bake --help` for more information.
 
 ## Installing multiple apps
 
-Backend builds contain `install-app` script that places app where it should be. Each call to script installs given app. Usage: `install-app [APP_NAME]`.
-
-If you want to install an app from git, clone it locally, COPY in Dockerfile.
+- Add clone command of the app to `ci/clone-apps.sh`
+- `backend.Dockerfile` builds contain `install-app` script that places app where it should be. Each call to script installs given app. Usage: `RUN install-app [APP_NAME]`.

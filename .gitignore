@@ -25,3 +25,4 @@ development/*
 *.pyc
 __pycache__
 venv
+custom_app/repos

@@ -3,12 +3,10 @@
 ARG ERPNEXT_VERSION
 FROM frappe/erpnext-worker:${ERPNEXT_VERSION}
 
+COPY repos ../apps
+
 USER root
 
-ARG APP_NAME
-COPY . ../apps/${APP_NAME}
-
-RUN --mount=type=cache,target=/root/.cache/pip \
-    install-app ${APP_NAME}
+RUN install-app hrms
 
 USER frappe

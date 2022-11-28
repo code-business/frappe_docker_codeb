@@ -1,10 +1,10 @@
-ARG FRAPPE_VERSION=version-14
+ARG FRAPPE_VERSION
+ARG ERPNEXT_VERSION
 # Prepare builder image
 FROM frappe/bench:latest as assets
 
-ARG FRAPPE_VERSION=version-14
-ARG ERPNEXT_VERSION=version-14
-ARG APP_NAME
+ARG FRAPPE_VERSION
+ARG ERPNEXT_VERSION
 
 # Setup frappe-bench using FRAPPE_VERSION
 RUN bench init --version=${FRAPPE_VERSION} --skip-redis-config-generation --verbose --skip-assets /home/frappe/frappe-bench
@@ -14,7 +14,7 @@ WORKDIR /home/frappe/frappe-bench
 RUN bench get-app --branch=${ERPNEXT_VERSION} --skip-assets --resolve-deps erpnext
 
 # Copy custom app(s)
-COPY --chown=frappe:frappe . apps/${APP_NAME}
+COPY --chown=frappe:frappe repos apps
 
 # Setup dependencies
 RUN bench setup requirements
